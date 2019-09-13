@@ -1,0 +1,142 @@
+---
+title: "tipos_percepcion_meritocracia"
+author: "Herrera-Leigthon y Meneses-Rivas"
+date: "28 de agosto de 2019"
+output: html_document
+---
+
+#Tipos de percepcion de la meritocracia.
+
+## Aproximacion teorica
+Dentro de los ultimos a?os, los trabajos que estudian la estructura y movilidad social intentando evaluar si los sistemas son objetivamente meritocraticos ( ) han sido complementados con un conjunto de trabajos que estudian las percepciones de las personas respecto a los sistemas, evaluando si los perciben  como meritocraticos o mas bien, consideran que las oportunidades para salir adelante son producto de atributos externos ( ). Estos estudios son de suma importancia, puesto que se ha comprobado reiteradamente que las percepciones de las personas respecto a la meritocracia, tienen efectos sobre el la preocupacion por la desigualdad, o asuntos de redistribucion social ()
+En consideracion de este campo de estudio, este trabajo tiene como objetivo principal hacer tipos ideales de las personas seg?n sus percepociones meritocraticas y no meritocraticas de la sociedad chilena, entendiendo como percibir meritocracia estar de acuerdo con que las personas que se esfuerzan mas y tienen mas talento obtienen mas recursos, mientras que se entiende por no percibir meritocracia, estar de acuerdo con que las personas hijos de padres ricos y con buenos contactos salen adelante. Un estudio con un enfoque similar se ha realizado en muestras sobre Estados Unidos y China, los cuales han concluido que los estadounidenses poseen mayor percepcion de meritocracia que los Chinos, destacando la importancia de evaluar conjuntamente elementos meritocraticos como no meritocraticos (Xian Reynold, 2017), aunque los mismos autores plantean en a?os anteriores que los estadounidenses balancean tambien factores de ?xito no meritocraticos, aunque estos han cambiado en el tiempo, pasando de ser mas importante la raza y el genero a los contactos (Xian - Reynold, 2017) . 
+En chile existe una dualidad semejante respecto a la percepcion de las razones de la desigualdad. Por un lado, los imaginarios de la estratificacion social, como se?alan Barozet y Mac-Clure (2016), poseen en alguna medida un sentido normativo que relaciona valorativamente el exito al esfuerzo y el fracaso al conformismo. Considerado de este modo, algunas personas poseen cierta visi?n meritocratica, en la cual consideran un punto fundamental de la distribuci?n de recursos el merito de cada persona, asociando los mismos a ciertas posiciones. Por otro lado, como expone Kathia Araujo, las personas son bastante consientes de las diferencias de oportunidades y de las desventajas que poseen personas de estratos bajos, lo cual, lo cual pole en tela de juicio lo meritocratico del sistema, en tanto  como concluye el Castillo (2018), puede decirse respecto a la distribucion de recursos, que existen dos dimensiones comunes a las razones por las que se cree que las personas son ricas o pobres, siendo estas dimensiones de caracter interno (Esfuerzo, talento, trabajo duro) o de caracter externo (sistema educacional y sistema economico). En suma, la bibliografia da cuenta de la existencia de dos dimensiones a partir de las cuales las personas evaluan la distribucion de recursos, una mas proxima a la meritocracia, basada en caracter?sticas internas meritorias como el esfuerzo y el talento, y otras, referidas a caracteristicas externas, como las desigualdades sociales. No obstante, estos trabajos no dan cuenta a cabalidad, de si para las personas las personas la atribucion de recursos por atributos externos o internos son dicotomicos o mas bien est?n conciliados en la percepcion de las personas. 
+Por ultimo un aporte de este trabajo ser? hacer clases latentes no solo incluyendo en la tipolog?a las percepciones, sino tambien las opiniones normativas. 
+Se hipotetiza, en funci?n de la bibliograf?a expuesta, que la mayor?a de las personas pertenecera al grupo que considera importantes ambos aspectos. 
+
+
+
+```{r}
+
+pacman::p_load(poLCA,
+               psych,
+               foreign,
+               gdata, # rename vars 
+               stargazer,
+               xtable,
+               lavaan,
+               vcd,
+               vcdExtra,
+               readstata13,
+               skimr,
+               ggplot2,
+               sjPlot,
+               sjmisc) 
+library(haven)
+library(dplyr)
+```
+
+```{r}
+pob <- read_spss(file = "pob_05netquest.sav")
+pob_mer=pob %>% select(
+"esfuerzo"= merit_perc_pref_1,
+"talento" = merit_perc_pref_2,
+"padres_pudientes"=merit_perc_pref_3,
+"contactos"=merit_perc_pref_4) %>% as.data.frame()
+
+
+pob_mer <- na.omit(pob_mer)
+
+#se dicotomiza para simplificar el analsis. 2= de acuerdo  1= desacuerdo
+#recuerda que no se puede poner en poLCA valores 0.
+pob_mer$esfuerzo<-ifelse(pob_mer$esfuerzo>=3,2,1)
+pob_mer$talento<-ifelse(pob_mer$talento>=3,2,1)
+pob_mer$padres_pudientes<-ifelse(pob_mer$padres_pudientes>=3,2,1)
+pob_mer$contactos<-ifelse(pob_mer$contactos>=3,2,1)
+```
+
+```{r}
+  stargazer(pob_mer, type ="text")
+
+```
+
+
+```{r}
+f6<-cbind(esfuerzo,talento,padres_pudientes, contactos)~1
+
+set.seed(100) # para mantener el mismo orden de las clases
+lc2=poLCA(f6,pob_mer,nclass=2, graphs = TRUE)
+lc3=poLCA(f6,pob_mer,nclass=3, graphs = TRUE)
+lc4=poLCA(f6,pob_mer,nclass=4, graphs = TRUE)
+lc5=poLCA(f6,pob_mer,nclass=5, graphs = TRUE)
+```
+```{r}
+
+fit.lc2 <- data.frame(Modell=c("Model lc2"),
+                      BIC                         =lc2$bic,
+                      AIC                        = lc2$aic)
+
+
+fit.lc3 <- data.frame(Modell=c("Model lc3"),
+                      BIC                         =lc3$bic,
+                      AIC                        = lc3$aic)
+
+fit.lc4 <- data.frame(Modell=c("Model lc4"),
+                      BIC                         =lc4$bic,
+                      AIC                        = lc4$aic)
+
+fit.lc5 <- data.frame(Modell=c("Model lc5"),
+                      BIC                         =lc5$bic,
+                      AIC                        = lc5$aic)
+
+
+comp.fit.lca=rbind(fit.lc2,fit.lc3,fit.lc4,fit.lc5)
+print(comp.fit.lca)
+
+```
+En funcion del BIC y AIC, puede concluirse que el modelo que mejor ajusta es aquel que tiene 3 clases latentes, dado que en este punto se detiene el descenso de los estadisticos. Cabe hacer otras pruebas para evaluar esta desicion. 
+
+evaluemos denuevo el modelo de tres clases 
+```{r}
+set.seed(100)
+lc1=poLCA(f6,pob_mer,nclass=3, graphs = TRUE)
+```
+y8
+En funcion de estos datos podemos decir que existen tres perfiles respecto a las creencias en la meritocracia.
+
+1. Primero el 62% de las personas pertenecen a un grupo que denominaremos __miscelaneos__ quienes consideran que tanto el merito, expresado en talento y esfuerzo, como las ventajas estructurales, como el caudal economico de los padres y los contactos, pueden ayudar a alguien a salir adelante y obtener mayores recompensas. 
+Este grupo es bastante importante, y no solo por su tama?o, sino que tambien por que explica el que no exista un solo factor latente (afc), ya que no es tan contrario creen en una cosa u en otra, como para considerarlas partes opuestas de un continuo.
+
+2. Al segundo grupo esta compuesto por, aproximadamente, el 10% de la muestra les denominaremos __pseudo-meritocraticos__ nombre que alude al hecho de que si bien tienen una clara tendencia a desestimar el efecto de la reproducci?n social, aunque una tendencia no tan clara  a darle peso al esfuerzo (p= .60)   e incluso una tendencia relativamente menor al talento (p=.42). 
+
+3. El tercer grupo, compuesto por un 27,8% de los casos, ser? denominado __reproduccionistas__ en tanto poseen una baja probabilidad de darle importancia al esfuerzo y al talento (p= .07 p=.22), mientras que poseen una clara tendencia a darle importancia a las variables de reproducci?n (p=.93, p=.90). 
+
+```{r}
+#analisis de entropia
+
+poLCA.entropy(lc2)
+poLCA.entropy(lc3)
+poLCA.entropy(lc4)
+poLCA.entropy(lc5)
+```
+El resultado para el modelo lc1 (3 clases latentes) no presenta una mejor entropia que los demas pero en general es buena (?va de 1 a 100?)
+```{r}
+nume.E <- -sum(lc1$posterior * log(lc1$posterior))
+##Denominator (n*log(K)): ## n is a sample size, and K is a number of class
+deno.E <- 894*log(3) #el valor que va dentro del log es el numero de clases. 
+##Relative Entropy
+Entro <- 1-(nume.E/deno.E)
+Entro
+```
+La entropia relartiva no es muy satisfacctoria, es una razon demasiado alta.
+
+
+```{r}
+#imputar clase a sujetos
+pob_mer.lc1= cbind(pob_mer,lc1$posterior,lc1$predclass)
+pob_mer.lc1= round(pob_mer.lc1, digits= 3)
+
+head(pob_mer.lc1) H
+```
+
+#Me falta agregar un analisis con variables normativas, y comparar los tipos. 
